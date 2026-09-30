@@ -1,0 +1,482 @@
+# Timeframe registry for the survey remote-sensing suite.
+#
+# Curated, shipped-with-the-package data (no network, no LLM). Each entry
+# maps a (variable, region, source) triple to the characteristic timescales
+# a sensible map-reel window is built from: dominant cycles, climatological
+# season bounds, trend horizons, and event-density bands.
+#
+# Conventions:
+# - "variable" uses the canonical survey-viz variable keys (see
+#   survey-viz/src/viz/spec.py KNOWN_VARIABLES; "chlorophyll" is the
+#   legacy alias of "ocean-color").
+# - "region" uses the survey-viz gazetteer region keys
+#   (survey-viz/src/viz/data/regions.yaml); null = global default for the
+#   variable, used when no region-specific entry exists.
+# - "source" uses the survey-viz adapter keys (KNOWN_SOURCES in
+#   survey-viz/src/viz/spec.py). "tp" exists under two sources ("era5" and
+#   "imerg"); pass source= to disambiguate.
+# - cycle_period_days is the dominant period in days (365.25 for the
+#   annual cycle, accounting for leap years).
+# - A season has start/end as month/day; wrap seasons (Oct->Mar) span a
+#   year boundary. "basis" records the source of the season bounds.
+# - static: true marks a time-invariant underlay (GEBCO basemaps) -> the
+#   engine raises rather than suggest a window.
+entries:
+
+# ---------------------------------------------------------------- SST --
+- variable: sst
+  region: null
+  source: oisst
+  long_name: Sea surface temperature
+  modes: [cycle, season, trend]
+  default_mode: cycle
+  cycle_period_days: 365.25
+  cycle_basis: "Annual insolation cycle drives SST's dominant mode almost everywhere."
+  cadence_days: 1
+  season: null
+  trend_years: 40
+  trend_basis: "NOAA OISST record runs 1981-present."
+  event_density: null
+  notes: "Global OISST record is complete daily from 1981; annual cycle is the default framing."
+
+# -------------------------------------------------------- ERA5 (t2m) --
+- variable: t2m
+  region: null
+  source: era5
+  long_name: 2-m air temperature
+  modes: [cycle, season, trend]
+  default_mode: cycle
+  cycle_period_days: 365.25
+  cycle_basis: "Annual insolation cycle."
+  cadence_days: 1
+  season: null
+  trend_years: 30
+  trend_basis: "ERA5 record 1940-present; 30 yr matches the WMO climate-normal convention."
+  event_density: null
+  notes: "Seasonal temperature framing (e.g. summer heat) can be added per region later."
+
+# -------------------------------------------------------- ERA5 (wind) --
+- variable: wind
+  region: null
+  source: era5
+  long_name: 10-m wind
+  modes: [cycle, trend]
+  default_mode: cycle
+  cycle_period_days: 365.25
+  cycle_basis: "Mid-latitude wind regimes follow the annual storm-track cycle."
+  cadence_days: 1
+  season: null
+  trend_years: 30
+  trend_basis: "ERA5 record 1940-present."
+  event_density: null
+  notes: "Trade-wind / monsoon regions have a semi-annual (182.6 d) harmonic; data-driven detection will pick that up when a series is supplied."
+
+# --------------------------------------------------------- ERA5 (msl) --
+- variable: msl
+  region: null
+  source: era5
+  long_name: Mean sea-level pressure
+  modes: [cycle, trend]
+  default_mode: cycle
+  cycle_period_days: 365.25
+  cycle_basis: "Semi-permanent pressure systems migrate annually."
+  cadence_days: 1
+  season: null
+  trend_years: 30
+  trend_basis: "ERA5 record 1940-present."
+  event_density: null
+
+# ---------------------------------------------------------- ERA5 (tp) --
+- variable: tp
+  region: null
+  source: era5
+  long_name: Total precipitation (ERA5)
+  modes: [cycle, season, trend]
+  default_mode: cycle
+  cycle_period_days: 365.25
+  cycle_basis: "Annual cycle dominates precipitation climatology in most regions."
+  cadence_days: 1
+  season: null
+  trend_years: 30
+  trend_basis: "ERA5 record 1940-present."
+  event_density: null
+  notes: "Disambiguate from IMERG tp with source='imerg'."
+
+# -------------------------------------------------------- IMERG (tp) --
+- variable: tp
+  region: null
+  source: imerg
+  long_name: Precipitation (IMERG)
+  modes: [cycle, trend]
+  default_mode: cycle
+  cycle_period_days: 365.25
+  cycle_basis: "Annual cycle dominates precipitation climatology in most regions."
+  cadence_days: 1
+  season: null
+  trend_years: 25
+  trend_basis: "IMERG record runs 2000-present."
+  event_density: null
+  notes: "Disambiguate from ERA5 tp with source='era5'."
+
+# ----------------------------------------------------- currents (OSCAR) --
+- variable: currents
+  region: null
+  source: oscar
+  long_name: Ocean surface currents
+  modes: [cycle, trend]
+  default_mode: cycle
+  cycle_period_days: 365.25
+  cycle_basis: "Boundary currents and the global gyre circulation follow the annual wind-stress cycle."
+  cadence_days: 5
+  season: null
+  trend_years: 20
+  trend_basis: "OSCAR record 1992-present; multi-decadal trend framing is approximate."
+  event_density: null
+
+# ------------------------------------------------------- fire (FIRMS) --
+- variable: fire
+  region: null
+  source: firms
+  long_name: Active fire detections
+  modes: [event-density, season, trend]
+  default_mode: event-density
+  cycle_period_days: null
+  cadence_days: 1
+  season: null
+  trend_years: 20
+  trend_basis: "MODIS/FIRMS active-fire era 2001-present."
+  event_density: {min_count: 50, target_count: 200, max_count: 500,
+                  min_window_days: 7, max_window_days: 180,
+                  lull_threshold_per_day: 1.0}
+  notes: "Event variable: default sizes the trailing window to the target band. Region-specific seasons below."
+
+- variable: fire
+  region: california
+  source: firms
+  long_name: Active fire detections
+  modes: [event-density, season, trend]
+  default_mode: season
+  cycle_period_days: null
+  cadence_days: 1
+  season: {name: "California fire season", start_month: 5, start_day: 1,
+           end_month: 10, end_day: 31,
+           basis: "CAL FIRE historical incident record: California's large-fire activity concentrates May-October (peak Aug-Sep)."}
+  trend_years: 20
+  trend_basis: "MODIS/FIRMS active-fire era 2001-present."
+  event_density: {min_count: 50, target_count: 200, max_count: 500,
+                  min_window_days: 7, max_window_days: 180,
+                  lull_threshold_per_day: 1.0}
+
+- variable: fire
+  region: pacific-northwest
+  source: firms
+  long_name: Active fire detections
+  modes: [event-density, season, trend]
+  default_mode: season
+  cycle_period_days: null
+  cadence_days: 1
+  season: {name: "Pacific Northwest fire season", start_month: 5, start_day: 1,
+           end_month: 10, end_day: 31,
+           basis: "Northwest Interagency Coordination Center (NWCC): PNW fire activity concentrates May-October."}
+  trend_years: 20
+  trend_basis: "MODIS/FIRMS active-fire era 2001-present."
+  event_density: {min_count: 50, target_count: 200, max_count: 500,
+                  min_window_days: 7, max_window_days: 180,
+                  lull_threshold_per_day: 1.0}
+
+- variable: fire
+  region: boreal-canada
+  source: firms
+  long_name: Active fire detections
+  modes: [event-density, season, trend]
+  default_mode: season
+  cycle_period_days: null
+  cadence_days: 1
+  season: {name: "Boreal Canada fire season", start_month: 5, start_day: 1,
+           end_month: 9, end_day: 30,
+           basis: "Canadian Interagency Forest Fire Centre (CIFFC): boreal fire activity runs May-September."}
+  trend_years: 20
+  trend_basis: "MODIS/FIRMS active-fire era 2001-present."
+  event_density: {min_count: 50, target_count: 200, max_count: 500,
+                  min_window_days: 7, max_window_days: 180,
+                  lull_threshold_per_day: 1.0}
+
+- variable: fire
+  region: amazon-basin
+  source: firms
+  long_name: Active fire detections
+  modes: [event-density, season, trend]
+  default_mode: season
+  cycle_period_days: null
+  cadence_days: 1
+  season: {name: "Amazon burning season", start_month: 7, start_day: 1,
+           end_month: 11, end_day: 30,
+           basis: "INPE Queimadas program: Amazon fire counts peak in the dry season, July-November (peak Aug-Sep)."}
+  trend_years: 20
+  trend_basis: "MODIS/FIRMS active-fire era 2001-present."
+  event_density: {min_count: 50, target_count: 200, max_count: 500,
+                  min_window_days: 7, max_window_days: 180,
+                  lull_threshold_per_day: 1.0}
+
+- variable: fire
+  region: australia-southeast
+  source: firms
+  long_name: Active fire detections
+  modes: [event-density, season, trend]
+  default_mode: season
+  cycle_period_days: null
+  cadence_days: 1
+  season: {name: "Southeast Australia fire season", start_month: 10, start_day: 1,
+           end_month: 3, end_day: 31,
+           basis: "Australian Bureau of Meteorology / AFAC: southeast Australia's bushfire season runs October-March (wrap season spanning the year boundary)."}
+  trend_years: 20
+  trend_basis: "MODIS/FIRMS active-fire era 2001-present."
+  event_density: {min_count: 50, target_count: 200, max_count: 500,
+                  min_window_days: 7, max_window_days: 180,
+                  lull_threshold_per_day: 1.0}
+
+# ---------------------------------------------------- sea-ice (NSIDC) --
+- variable: sea-ice
+  region: null
+  source: nsidc
+  long_name: Sea-ice extent / concentration
+  modes: [cycle, season, trend]
+  default_mode: cycle
+  cycle_period_days: 365.25
+  cycle_basis: "Annual freeze-thaw cycle."
+  cadence_days: 1
+  season: {name: "Arctic melt season", start_month: 6, start_day: 1,
+           end_month: 9, end_day: 30,
+           basis: "NSIDC Arctic Sea Ice News: melt season runs June-September, with the September minimum; used as the default melt-season window for polar regions."}
+  trend_years: 40
+  trend_basis: "NSIDC satellite record starts October 1978; a 40-yr window covers essentially the full record."
+  event_density: null
+  notes: "Registry season applies to arctic-ocean; for southern-ocean the annual cycle still holds but the melt window is inverted — callers should pass a series or explicit dates there."
+
+# ------------------------------------------ night-lights (Black Marble) --
+- variable: night-lights
+  region: null
+  source: blackmarble
+  long_name: Nighttime lights
+  modes: [trend, cycle]
+  default_mode: trend
+  cycle_period_days: 365.25
+  cycle_basis: "Weak annual cycle in illumination geometry; trend is the primary framing."
+  cadence_days: 30
+  season: null
+  trend_years: 12
+  trend_basis: "VIIRS Day/Night Band Black Marble record runs 2012-present."
+  event_density: null
+  notes: "Default is the full instrument era: there is no meaningful 'cycle' window for lights change-detection."
+
+# ------------------------------------------- storm-tracks (IBTrACS) --
+- variable: storm-tracks
+  region: null
+  source: ibtracs
+  long_name: Tropical cyclone tracks
+  modes: [event-density, trend]
+  default_mode: event-density
+  cycle_period_days: null
+  cadence_days: 1
+  season: null
+  trend_years: 40
+  trend_basis: "IBTrACS v4 is most complete from the early 1980s (geostationary era)."
+  event_density: {min_count: 10, target_count: 40, max_count: 100,
+                  min_window_days: 30, max_window_days: 365,
+                  lull_threshold_per_day: 0.1}
+  notes: "Event variable: default sizes the trailing window to the target band. Basin seasons below."
+
+- variable: storm-tracks
+  region: north-atlantic
+  source: ibtracs
+  long_name: Tropical cyclone tracks
+  modes: [event-density, season, trend]
+  default_mode: season
+  cycle_period_days: null
+  cadence_days: 1
+  season: {name: "Atlantic hurricane season", start_month: 6, start_day: 1,
+           end_month: 11, end_day: 30,
+           basis: "National Hurricane Center (NHC): the official Atlantic hurricane season is June 1-November 30."}
+  trend_years: 40
+  trend_basis: "IBTrACS v4 geostationary era."
+  event_density: {min_count: 5, target_count: 20, max_count: 50,
+                  min_window_days: 30, max_window_days: 365,
+                  lull_threshold_per_day: 0.1}
+
+- variable: storm-tracks
+  region: caribbean-sea
+  source: ibtracs
+  long_name: Tropical cyclone tracks
+  modes: [event-density, season, trend]
+  default_mode: season
+  cycle_period_days: null
+  cadence_days: 1
+  season: {name: "Atlantic hurricane season", start_month: 6, start_day: 1,
+           end_month: 11, end_day: 30,
+           basis: "National Hurricane Center (NHC): the official Atlantic hurricane season is June 1-November 30."}
+  trend_years: 40
+  trend_basis: "IBTrACS v4 geostationary era."
+  event_density: {min_count: 5, target_count: 20, max_count: 50,
+                  min_window_days: 30, max_window_days: 365,
+                  lull_threshold_per_day: 0.1}
+
+- variable: storm-tracks
+  region: gulf-of-mexico
+  source: ibtracs
+  long_name: Tropical cyclone tracks
+  modes: [event-density, season, trend]
+  default_mode: season
+  cycle_period_days: null
+  cadence_days: 1
+  season: {name: "Atlantic hurricane season", start_month: 6, start_day: 1,
+           end_month: 11, end_day: 30,
+           basis: "National Hurricane Center (NHC): the official Atlantic hurricane season is June 1-November 30."}
+  trend_years: 40
+  trend_basis: "IBTrACS v4 geostationary era."
+  event_density: {min_count: 5, target_count: 20, max_count: 50,
+                  min_window_days: 30, max_window_days: 365,
+                  lull_threshold_per_day: 0.1}
+
+- variable: storm-tracks
+  region: us-east-coast
+  source: ibtracs
+  long_name: Tropical cyclone tracks
+  modes: [event-density, season, trend]
+  default_mode: season
+  cycle_period_days: null
+  cadence_days: 1
+  season: {name: "Atlantic hurricane season", start_month: 6, start_day: 1,
+           end_month: 11, end_day: 30,
+           basis: "National Hurricane Center (NHC): the official Atlantic hurricane season is June 1-November 30."}
+  trend_years: 40
+  trend_basis: "IBTrACS v4 geostationary era."
+  event_density: {min_count: 5, target_count: 20, max_count: 50,
+                  min_window_days: 30, max_window_days: 365,
+                  lull_threshold_per_day: 0.1}
+
+- variable: storm-tracks
+  region: north-pacific
+  source: ibtracs
+  long_name: Tropical cyclone tracks
+  modes: [event-density, season, trend]
+  default_mode: season
+  cycle_period_days: null
+  cadence_days: 1
+  season: {name: "Western North Pacific typhoon season", start_month: 5, start_day: 1,
+           end_month: 11, end_day: 30,
+           basis: "Japan Meteorological Agency operational convention: the western North Pacific typhoon season is monitored May-November (activity is year-round but concentrates in this band)."}
+  trend_years: 40
+  trend_basis: "IBTrACS v4 geostationary era."
+  event_density: {min_count: 5, target_count: 20, max_count: 50,
+                  min_window_days: 30, max_window_days: 365,
+                  lull_threshold_per_day: 0.1}
+
+# --------------------------------------------- water-storage (GRACE) --
+- variable: water-storage
+  region: null
+  source: grace
+  long_name: Terrestrial water storage anomaly
+  modes: [cycle, trend]
+  default_mode: cycle
+  cycle_period_days: 365.25
+  cycle_basis: "TWS follows the annual hydrologic cycle (wet/dry seasons)."
+  cadence_days: 30
+  season: null
+  trend_years: 20
+  trend_basis: "GRACE/GRACE-FO record runs 2002-present (with the 2017-2018 gap); 20 yr covers it."
+  event_density: null
+  notes: "Monthly cadence: cycle mode uses one 365.25-day window sampled at the record's monthly cadence."
+
+# ------------------------------------------------- streamflow (USGS) --
+- variable: streamflow
+  region: null
+  source: usgs
+  long_name: Streamgage discharge
+  modes: [cycle, trend]
+  default_mode: cycle
+  cycle_period_days: 365.25
+  cycle_basis: "Annual hydrograph: snowmelt/spring freshet and storm seasons."
+  cadence_days: 1
+  season: null
+  trend_years: 30
+  trend_basis: "USGS NWIS daily record; 30 yr matches the WMO climate-normal convention."
+  event_density: null
+
+# ----------------------------------------- ocean-color (MODIS Aqua) --
+- variable: ocean-color
+  region: null
+  source: oceancolor
+  long_name: Chlorophyll-a concentration
+  modes: [cycle, season, trend]
+  default_mode: cycle
+  cycle_period_days: 365.25
+  cycle_basis: "Phytoplankton phenology follows the annual light/stratification cycle."
+  cadence_days: 8
+  season: null
+  trend_years: 20
+  trend_basis: "MODIS Aqua R2022 L3 record runs 2002-present."
+  event_density: null
+
+- variable: ocean-color
+  region: north-atlantic
+  source: oceancolor
+  long_name: Chlorophyll-a concentration
+  modes: [cycle, season, trend]
+  default_mode: season
+  cycle_period_days: 365.25
+  cycle_basis: "Phytoplankton phenology follows the annual light/stratification cycle."
+  cadence_days: 8
+  season: {name: "North Atlantic spring bloom", start_month: 3, start_day: 1,
+           end_month: 6, end_day: 30,
+           basis: "MODIS-Aqua ocean-color climatology: the North Atlantic spring bloom typically develops March-June (timing shifts year to year)."}
+  trend_years: 20
+  trend_basis: "MODIS Aqua R2022 L3 record runs 2002-present."
+  event_density: null
+
+# ------------------------------------------- earthquakes (ComCat) --
+- variable: earthquakes
+  region: null
+  source: comcat
+  long_name: Earthquake events
+  modes: [event-density, trend]
+  default_mode: event-density
+  cycle_period_days: null
+  cadence_days: 1
+  season: null
+  trend_years: 50
+  trend_basis: "USGS ComCat instrumental record is reasonably complete for M>=5 globally since the 1960s."
+  event_density: {min_count: 20, target_count: 60, max_count: 200,
+                  min_window_days: 1, max_window_days: 365,
+                  lull_threshold_per_day: 0.1}
+  notes: "ComCat catalogs observed events, not forecasts; the window sizes to the target band. No seasonality is assumed."
+
+# ------------------------------------------------- static underlays --
+- variable: bathymetry
+  region: null
+  source: gebco
+  long_name: Seafloor bathymetry
+  modes: [na]
+  default_mode: na
+  static: true
+  cycle_period_days: null
+  cadence_days: null
+  season: null
+  trend_years: null
+  trend_basis: null
+  event_density: null
+  notes: "GEBCO grids are time-invariant cartographic underlays: no window applies (n/a)."
+
+- variable: elevation
+  region: null
+  source: gebco
+  long_name: Land elevation
+  modes: [na]
+  default_mode: na
+  static: true
+  cycle_period_days: null
+  cadence_days: null
+  season: null
+  trend_years: null
+  trend_basis: null
+  event_density: null
+  notes: "GEBCO grids are time-invariant cartographic underlays: no window applies (n/a)."

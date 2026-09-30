@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "survey-timescales"
+version = "0.1.0"
+description = "Timeframe-selection engine for the survey remote-sensing suite: registry-driven window suggestions (cycles, seasons, event-density bands, trend horizons) with data-driven dominant-period detection"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.9"
+dependencies = ["numpy>=1.22"]
+keywords = ["remote-sensing", "time-series", "seasonality", "reel-studio", "geospatial"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Atmospheric Science",
+]
+
+[project.urls]
+Homepage = "https://github.com/crieck2010/survey-timescales"
+Repository = "https://github.com/crieck2010/survey-timescales"
+
+[project.scripts]
+survey-timescales = "timescales.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+timescales = ["data/*.yaml"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
