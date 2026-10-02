@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "survey-timescales"
-version = "0.1.0"
+version = "0.2.0"
 description = "Timeframe-selection engine for the survey remote-sensing suite: registry-driven window suggestions (cycles, seasons, event-density bands, trend horizons) with data-driven dominant-period detection"
 readme = "README.md"
 license = { text = "MIT" }

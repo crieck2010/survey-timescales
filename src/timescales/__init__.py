@@ -13,12 +13,14 @@ from .detect import DominantPeriod, detect_dominant_period
 from .framing import MODES, WindowSuggestion, suggest_window, trim_lulls
 from .registry import (RegistryEntry, StaticVariableError, TimescaleRegistry,
                        UnknownVariableError, canonical_variable, load_registry)
+from .stride import recommend_stride
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 __all__ = [
     "__version__",
     "suggest_window",
+    "recommend_stride",
     "detect_dominant_period",
     "load_registry",
     "WindowSuggestion",

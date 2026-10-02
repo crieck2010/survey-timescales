@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-10-01
+
+### Added
+- `timescales.recommend_stride(phenomenon, source=None)`: phenomenon-aware
+  stride recommendation — how far apart in time frames should be (the
+  window picks *when*, the stride picks *how finely*). Five phenomena:
+  `tide` (3-hourly; tidal constituents ~12.4h need sub-daily),
+  `synoptic` (6-hourly + GFS `forecast_hours` 0/6/12/18),
+  `seasonal` (weekly), `climate` (monthly), `event` (`per_event=True`,
+  one frame per event). Unknown phenomena raise `ValueError` listing the
+  valid keys (no silent default, on both paths). Same
+  "suggests; callers decide" contract as `suggest_window`.
+- Optional peer pattern: when the `survey-autopilot` engine is importable,
+  `recommend_stride` delegates to `autopilot.stride.recommend_stride` (the
+  canonical table, `"via": "autopilot"`); otherwise a built-in fallback
+  table mirrored from survey-autopilot's documented table is used
+  (`"via": "builtin-fallback"`). `survey-autopilot` is not a dependency.
+
 ## [0.1.0] - 2026-09-30
 
 ### Added

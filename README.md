@@ -12,7 +12,7 @@ answers *"what dates should this reel cover?"* — "temperature → 1 year",
 that holds 20–200 events", "night lights → the 12-year VIIRS era."
 
 - **Package / import:** `survey-timescales` / `timescales`
-- **Version:** 0.1.0 · **License:** MIT
+- **Version:** 0.2.0 · **License:** MIT
 - **Dependencies:** `numpy` + Python standard library. No network, no LLM,
   no UI framework — the registry is curated data shipped in the package,
   and the engine suggests windows; callers decide.
@@ -79,6 +79,49 @@ survey-timescales registry --variable storm-tracks
 
 A header row is tolerated. `tp` exists under two sources — disambiguate
 with `--source era5` / `--source imerg`.
+
+## Phenomenon-aware stride (v0.2.0)
+
+Once the window is set, `recommend_stride` answers *how finely* the frames
+should be spaced — a physics decision, not a rendering detail. Relationship
+to `suggest_window`: **the window picks *when*, the stride picks *how
+finely***. Sampling tides daily aliases the ~12.4 h constituents into
+nonsense; sampling the seasonal cycle 6-hourly wastes frames on mud.
+
+```python
+from timescales import recommend_stride
+
+r = recommend_stride("synoptic", source="gfs-wind")
+print(r["stride_hours"], r["forecast_hours"], r["via"])
+# 6 (0, 6, 12, 18) autopilot
+print(r["reason"])
+# synoptic-scale wind/storm evolution at 6-hourly; forecast_hours applies
+# to GFS-wind sources only
+```
+
+| Phenomenon | Stride | Why |
+|---|---|---|
+| `tide` | 3-hourly | tidal constituents (~12.4h) need sub-daily sampling to stay legible; 3-hourly resolves the semidiurnal cycle without aliasing |
+| `synoptic` | 6-hourly (+ GFS `forecast_hours` 0/6/12/18) | synoptic-scale wind/storm evolution at 6-hourly |
+| `seasonal` | weekly | weekly sampling resolves the seasonal cycle without mud — denser sampling adds frames but no new information |
+| `climate` | monthly | monthly sampling for multi-year climate context; sub-monthly variation is noise at this timescale |
+| `event` | per-event (`per_event=True`) | one frame per event, not a fixed cadence — the stride is informational, the event list drives the frames |
+
+Unknown phenomena raise `ValueError` listing the valid keys — never a
+silent default. The engine *recommends*; callers decide: the table is a
+starting point, not a law (a stalled storm needs denser sampling than
+"synoptic" assumes; the caller owns deviations). `forecast_hours` is
+GFS-wind-specific (the GFS NOMADS feed publishes f000..f120); it is `None`
+for everything else and should be ignored for non-GFS sources.
+
+**Peer/fallback behavior:** when the [`survey-autopilot`](https://github.com/crieck2010/survey-autopilot)
+engine is importable, `recommend_stride` delegates to
+`autopilot.stride.recommend_stride` (the canonical table) and returns
+`"via": "autopilot"`. Otherwise it falls back to the built-in table above —
+mirrored from survey-autopilot's documented table (install
+survey-autopilot for the canonical one) — and returns
+`"via": "builtin-fallback"`. `survey-autopilot` is an **optional peer**,
+not a dependency.
 
 ## Framing modes
 
